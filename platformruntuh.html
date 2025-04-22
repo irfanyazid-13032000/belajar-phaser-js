@@ -21,8 +21,8 @@
         physics: {
             default: 'arcade',
             arcade: {
-                gravity: { y: 0 },
-                debug: false
+                gravity: { y: 300 },
+                debug: true
             }
         },
         scene: {
@@ -35,7 +35,6 @@
     var game = new Phaser.Game(config);
     var player;
     var cursors
-    
 
     function preload ()
     {
@@ -53,25 +52,35 @@
 
         // membuat ijo (platform) menjadi benda yang static (tidak terpengaruh oleh gravitasi)
         // dan tidak bergerak
-        platforms = this.physics.add.staticGroup();
+        platforms = this.physics.add.group();
         
 
-        platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+        // platforms.create(400, 568, 'ground').setScale(2).refreshBody();
 
+        // Menambahkan platform ke grup
         platforms.create(600, 400, 'ground')
         platforms.create(50, 250, 'ground')
         platforms.create(750, 220, 'ground')
+
+            // Menambahkan gravitasi ke semua platform
+        platforms.children.iterate(function (platform) {
+            // platform.body.setGravityY(300); // Atur gravitasi untuk setiap platform
+            platform.setCollideWorldBounds(true); // Agar tidak keluar dari layar
+            platform.body.setBounce(1);
+        });
+
         
-        
-        
+        // membuat pemain
         player = this.physics.add.sprite(100, 450, 'dude');
         
-        player.body.setGravityY(300)
-        player.setBounce(0);
+        // player.body.setGravityY(300)
+        player.setBounce(0.2);
         player.setCollideWorldBounds(true);
 
         // mengatur tumbrukan antara ijo (platform) dan dude (player)
-        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(player, platforms, hitPlatform, null, this);
+
+       
         
         this.anims.create({
             key: 'left',
@@ -92,15 +101,13 @@
             frameRate: 10,
             repeat: -1
         });
-            
-
+        
         cursors = this.input.keyboard.createCursorKeys();
-
     }
 
     function update ()
     {
-        if (cursors.left.isDown)
+      if (cursors.left.isDown)
       {
           player.setVelocityX(-160);
 
@@ -112,18 +119,34 @@
 
           player.anims.play('right', true);
       }
+      else if (cursors.up.isDown)
+      {
+          player.setVelocityY(-200);
+
+          player.anims.play('turn');
+      }
       else
       {
           player.setVelocityX(0);
+          // player.setVelocityY(0);
 
           player.anims.play('turn');
       }
 
-      if (cursors.up.isDown && player.body.touching.down)
-      {
-          player.setVelocityY(-330);
-      }
+     
+
+      console.log('Player touching down:', player.body.touching.down);
+      console.log('Player position:', player.x, player.y);
+      console.log('Platform position:', platforms.getChildren().map(p => ({ x: p.x, y: p.y })));
     }
+
+    function hitPlatform(player, platform)
+{
+  // logika sundul
+    if (player.body.touching.up && platform.body.touching.down) {
+        platform.setVelocityY(-200); // Platform terdorong ke atas
+    }
+}
 
 </script>
 
