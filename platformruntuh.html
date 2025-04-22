@@ -42,7 +42,7 @@
         this.load.image('ground', 'assets/platform.png');
         this.load.image('star', 'assets/star.png');
         this.load.image('bomb', 'assets/bomb.png');
-        this.load.spritesheet('dude','assets/dude.png',{ frameWidth: 32, frameHeight: 48 }
+        this.load.spritesheet('dude','assets/terpotong.png',{ frameWidth: 190, frameHeight: 194 }
         );
     }
 
@@ -112,12 +112,15 @@
           player.setVelocityX(-160);
 
           player.anims.play('left', true);
+
+          player.flipX = true;
       }
       else if (cursors.right.isDown)
       {
           player.setVelocityX(160);
 
           player.anims.play('right', true);
+          player.flipX = false;
       }
       else if (cursors.up.isDown)
       {
@@ -144,7 +147,19 @@
 {
   // logika sundul
     if (player.body.touching.up && platform.body.touching.down) {
-        platform.setVelocityY(-200); // Platform terdorong ke atas
+        platform.setVelocityY(-400); // Platform terdorong ke atas
+        
+        // Timer untuk mulai mengurangi opacity setelah 2 detik
+        this.time.delayedCall(300, () => {
+            this.tweens.add({
+                targets: platform,
+                alpha: 0, // Mengurangi opacity menjadi 0
+                duration: 1000, // Durasi tween (1 detik)
+                onComplete: () => {
+                    platform.destroy(); // Menghapus platform setelah tween selesai
+                }
+            });
+        });
     }
 }
 
