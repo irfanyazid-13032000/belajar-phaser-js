@@ -21,8 +21,8 @@
         physics: {
             default: 'arcade',
             arcade: {
-                gravity: { y: 300 },
-                debug: true
+                // gravity: { y: 300 },
+                debug: false
             }
         },
         scene: {
@@ -36,12 +36,15 @@
     var player;
     var cursors
 
+
     function preload ()
     {
+        this.load.audio('hurtSound', 'assets/aduh.mp3'); // Ganti dengan path file suara Anda
         this.load.image('sky', 'assets/gamepedesaan.png');
         this.load.image('ground', 'assets/platform.png');
         this.load.image('star', 'assets/star.png');
         this.load.image('bomb', 'assets/bomb.png');
+        this.load.image('tanah', 'assets/tanah.jpg');
         this.load.spritesheet('dude','assets/cropanrapi.png',{ frameWidth: 192, frameHeight: 154 }
         );
     }
@@ -54,18 +57,24 @@
         // membuat ijo (platform) menjadi benda yang static (tidak terpengaruh oleh gravitasi)
         // dan tidak bergerak
         platforms = this.physics.add.group();
+        tanah = this.physics.add.staticGroup();
         
 
         // platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+        tanah.create(config.width / 2,  config.height / 2 + 350, 'tanah').setScale(2).refreshBody();
 
         // Menambahkan platform ke grup
-        platforms.create(600, 400, 'ground')
-        platforms.create(50, 250, 'ground')
-        platforms.create(750, 220, 'ground')
+
+        // platforms.create(config.width / 2 -10 , config.height / 2 - 10, 'ground')
+        // platforms.create(config.width / 2 -20 , config.height / 2 - 20, 'ground')
+
+        for (let index = 0; index < 100; index++) {
+            platforms.create(config.width / 2 -index , config.height / 2 - index, 'ground')
+        }
 
             // Menambahkan gravitasi ke semua platform
         platforms.children.iterate(function (platform) {
-            // platform.body.setGravityY(300); // Atur gravitasi untuk setiap platform
+            platform.body.setGravityY(300); // Atur gravitasi untuk setiap platform
             platform.setCollideWorldBounds(true); // Agar tidak keluar dari layar
             platform.body.setBounce(1);
         });
@@ -74,12 +83,24 @@
         // membuat pemain
         player = this.physics.add.sprite(100, 450, 'dude');
         
-        // player.body.setGravityY(300)
+        player.body.setGravityY(300)
         player.setBounce(0.2);
         player.setCollideWorldBounds(true);
 
         // mengatur tumbrukan antara ijo (platform) dan dude (player)
         this.physics.add.collider(player, platforms, hitPlatform, null, this);
+
+        this.physics.add.collider(player, tanah);
+        this.physics.add.collider(tanah, platforms);
+
+          // Event ketika pemain menyentuh batas dunia
+        player.body.onWorldBounds = true; // Aktifkan event world bounds
+        this.physics.world.on('worldbounds', function (body) {
+            if (body.gameObject === player) {
+                console.log('Pemain menyentuh batas bawah dunia!');
+                // Tambahkan logika lain di sini, seperti mengatur ulang posisi pemain
+            }
+        });
 
        
         
@@ -123,12 +144,6 @@
           player.anims.play('right', true);
           player.flipX = false;
       }
-      else if (cursors.up.isDown)
-      {
-          player.setVelocityY(-200);
-
-          player.anims.play('turn');
-      }
       else
       {
           player.setVelocityX(0);
@@ -137,11 +152,16 @@
           player.anims.play('turn');
       }
 
+        if (cursors.up.isDown && player.body.touching.down)
+        {
+            player.setVelocityY(-330);
+        }
+
+        console.log(player.body.touching.down);
+        
      
 
-      console.log('Player touching down:', player.body.touching.down);
-      console.log('Player position:', player.x, player.y);
-      console.log('Platform position:', platforms.getChildren().map(p => ({ x: p.x, y: p.y })));
+     
     }
 
     function hitPlatform(player, platform)
@@ -149,6 +169,8 @@
   // logika sundul
     if (player.body.touching.up && platform.body.touching.down) {
         platform.setVelocityY(-400); // Platform terdorong ke atas
+             // Mainkan suara kesakitan
+        this.sound.play('hurtSound');
         
         // Timer untuk mulai mengurangi opacity setelah 2 detik
         this.time.delayedCall(300, () => {
