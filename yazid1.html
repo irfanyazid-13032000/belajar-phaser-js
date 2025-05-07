@@ -35,10 +35,12 @@
     var game = new Phaser.Game(config);
     var player;
     var cursors
+    var stars
     
 
     function preload ()
     {
+        this.load.audio('bintangjatuh', 'assets/bintangnatap.mp3');
         this.load.image('sky', 'assets/sky.png');
         this.load.image('ground', 'assets/platform.png');
         this.load.image('star', 'assets/star.png');
@@ -49,6 +51,19 @@
 
     function create ()
     {
+        this.sound.context.resume().then(() => {
+            console.log('AudioContext telah diaktifkan setelah interaksi pengguna.');
+        });
+
+        this.input.on('pointerdown', () => {
+            if (this.sound.context.state === 'suspended') {
+                this.sound.context.resume().then(() => {
+                    console.log('AudioContext telah diaktifkan setelah pointerdown.');
+                });
+            }
+        });
+
+
         this.add.image(400, 300, 'sky');
 
         // membuat ijo (platform) menjadi benda yang static (tidak terpengaruh oleh gravitasi)
@@ -70,7 +85,7 @@
         player.setBounce(0);
         player.setCollideWorldBounds(true);
 
-        // mengatur tumbrukan antara ijo (platform) dan dude (player)
+        // mengatur tubrukan antara ijo (platform) dan dude (player)
         this.physics.add.collider(player, platforms);
         
         this.anims.create({
@@ -95,6 +110,49 @@
             
 
         cursors = this.input.keyboard.createCursorKeys();
+
+        
+        stars = this.physics.add.group({
+            key: 'star',
+            repeat: 90,
+            setXY: { x: 12, y: 0, stepX: 2 }
+        });
+
+        let starIndex = 1; // Gunakan indeks unik untuk setiap bintang
+        stars.children.iterate(function (star) {
+            star.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+            star.setGravityY(300); // Atur gravitasi untuk setiap bintang
+            star.setCollideWorldBounds(true); // Agar tidak keluar dari layar
+            
+            if (player.body.embedded && !star.hasTouched) {
+                console.log(`Pemain menyentuh bintang dengan ID ${star.id} (embedded)!`);
+                this.sound.play('bintangjatuh');
+                star.setAlpha(0);
+                star.hasTouched = true;
+            }
+        }, this);
+        
+        this.physics.add.collider(stars, platforms, function (star) {
+            // Atur kecepatan horizontal secara acak antara -200 (kiri) dan 200 (kanan)
+            star.setVelocityX(Phaser.Math.Between(-200, 200));
+        }, null, this);
+
+        stars.children.iterate(function (child) {
+        child.setCollideWorldBounds(true); // Pastikan bintang tetap di dalam dunia
+    });
+
+        this.physics.add.overlap(player, stars, function (player, star) {
+            if (!star.hasTouched) { // Periksa apakah bintang sudah disentuh
+                star.setAlpha(0); // Menghilangkan bintang saat pemain menyentuhnya
+                console.log(`Pemain menyentuh bintang dengan ID ${star.id}!`);
+                this.sound.play('bintangjatuh'); // Memainkan suara saat pemain menyentuh bintang
+                star.hasTouched = true; // Tandai bahwa bintang ini sudah disentuh
+            }
+        }, null, this);
+
+        // this.physics.add.collider(stars, platforms);
+
+
 
     }
 
@@ -124,6 +182,12 @@
           player.setVelocityY(-330);
       }
     }
+
+
+    // ternyata kalo ada parameternya di fungsi ini, baru bisa dibedain antar bintang yang satu dengan yang lain
+
+   
+
 
 </script>
 
